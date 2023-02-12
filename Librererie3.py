@@ -1,4 +1,5 @@
-# Importiamo le librerie necessarie
+
+# Importiamo le librerie necessarie 
 import subprocess
 import sys
 import os
@@ -191,35 +192,22 @@ def loading_bar():
             time.sleep(0.02)
             pbar.update(1)
 
-import nmap
-import subprocess
-import socket
-
 def network_scan():
     print("Scansione in corso...")
-    host = socket.gethostbyname(socket.gethostname())
-    nm = nmap.PortScanner()
-    nm.scan(host, arguments="-sP")
-    
-    arp_output = subprocess.run(["arp", "-a"], capture_output=True, text=True)
-    arp_lines = arp_output.stdout.strip().split("\n")[2:]
-    arp_hosts = []
-    for line in arp_lines:
-        fields = line.split()
-        arp_hosts.append(fields[1][1:-1])
-        
-    nmap_hosts = []
-    for x in nm.all_hosts():
-        if nm[x].state() == "up":
-            nmap_hosts.append((x, nm[x].hostnames(), nm[x].state()))
-    
+
+    arp_output = subprocess.run(["arp", "-a"], capture_output=True, text=True, check=True)
+    arp_lines = arp_output.stdout.strip().split("\n")
     hosts = []
-    for host in nmap_hosts:
-        if host[0] in arp_hosts:
-            hosts.append(host)
-            arp_hosts.remove(host[0])
-            
+    for line in arp_lines[2:]:
+        fields = line.split()
+        mac = fields[2]
+        ip = fields[0]
+        hostname = fields[1].strip("()") if "(" in fields[1] else None
+        hosts.append((mac, ip, hostname))
+
     return hosts
+
+
 
 # Chiamiamo la funzione per stampare l'intestazione del menu con arte ASCII
 text_art_menu()
@@ -289,80 +277,70 @@ while True:
         print("Selezione non valida. Inserire solo i numeri 1, 2 o 3.")
         continue
     if scelta == 1:
-        # Scansione e monitoraggio della rete
-        os.system("clear")
-        print("Hai selezionato l'opzione 1: Scansione e Monitoraggio della Rete")
-        hosts = []
-        while True:
+            # Scansione e monitoraggio della rete
             os.system("clear")
-            print("Sottomenu:")
-            print("1. Scansione")
-            print("2. Visualizzazione dei dispositivi")
-            print("3. Configurazione")
-            print("4. Torna al menu principale")
-            sottomenu = input("Scegli un'opzione: ")
-    
-            if sottomenu == "1":
+            print("Hai selezionato l'opzione 1: Scansione e Monitoraggio della Rete")
+            hosts = []
+        
+            while True:
                 os.system("clear")
-                print("Sottomenu Scansione:")
-                print("1. Esegui scansione")
-                print("2. Monitoraggio in tempo reale")
-                print("3. Selezione della sottorete")
-                sottomenu_scansione = input("Scegli un'opzione: ")
-    
-                if sottomenu_scansione == "1":
-                    hosts = network_scan()
-                    if hosts:
-                        print("Dispositivi connessi alla rete:")
-                        for host in hosts:
-                            print("{}: {}".format(host[0], host[1]))
+                print("Sottomenu:")
+                print("1. Scansione")
+                print("2. Visualizzazione dei dispositivi")
+                print("3. Configurazione")
+                print("4. Torna al menu principale")
+                sottomenu = input("Scegli un'opzione: ")
+        
+                if sottomenu == "1":
+                    os.system("clear")
+                    print("Sottomenu Scansione:")
+                    print("1. Esegui scansione")
+                    print("2. Monitoraggio in tempo reale")
+                    print("3. Torna al menu principale")
+                    sottomenu_scansione = input("Scegli un'opzione: ")
+        
+                    if sottomenu_scansione == "1":
+                        os.system("clear")
+                        hosts = network_scan()
+                        if hosts:
+                            print("Dispositivi connessi alla rete:")
+                            for host in hosts:
+                                print("{}: {}".format(host[0], host[1]))
+                        else:
+                            print("Nessun dispositivo connesso alla rete.")
+                        input("Premi invio per continuare...")
+                    elif sottomenu_scansione == "2":
+                        # Monitoraggio in tempo reale
+                        real_time_monitoring(hosts)
+                    elif sottomenu_scansione == "3":
+                        break
                     else:
-                        print("Nessun dispositivo connesso alla rete.")
-                    input("Premi invio per continuare...")
-                elif sottomenu_scansione == "2":
-                    # Monitoraggio in tempo reale
-                    real_time_monitoring(hosts)
-                elif sottomenu_scansione == "3":
-                    # Selezione della sottorete
-                    hosts = select_subnet()
-                else:
-                    print("Opzione non valida. Riprova.")
-            elif sottomenu == "2":
-                os.system("clear")
-                print("Sottomenu Visualizzazione dei dispositivi:")
-                print("1. Visualizzazione dettagliata")
-                print("2. Esporta in Excel")
-                sottomenu_dispositivi = input("Scegli un'opzione: ")
-    
-                if sottomenu_dispositivi == "1":
-                    # Visualizzazione dettagliata dei dispositivi
-                    show_device_details(hosts)
-                elif sottomenu_dispositivi == "2":
-                    if hosts:
-                        export_to_excel(hosts)
-                        print("Esportazione completata con successo.")
-                    else:
-                        print("Esegui prima una scansione della rete.")
-                    input("Premi invio per continuare...")
-                else:
-                    print("Opzione non valida. Riprova.") 
-            if sottomenu == "3":
-                os.system("clear")
-                print("Sottomenu Configurazione:")
-                print("1. Configurazione delle impostazioni")
-                sottomenu_configurazione = input("Scegli un'opzione: ")
-            
-                if sottomenu_configurazione == "1":
-                            # Configurazione delle impostazioni
-                            configure_settings()
-                else:
-                            print("Opzione non valida. Riprova.")
-            elif sottomenu == "4":
-                break
-            else:
                         print("Opzione non valida. Riprova.")
-            
-
+                elif sottomenu == "2":
+                    os.system("clear")
+                    print("Sottomenu Visualizzazione dei dispositivi:")
+                    print("1. Visualizzazione dettagliata")
+                    print("2. Esporta in Excel")
+                    sottomenu_dispositivi = input("Scegli un'opzione: ")
+        
+                    if sottomenu_dispositivi == "1":
+                        # Visualizzazione dettagliata dei dispositivi
+                        show_device_details(hosts)
+                    elif sottomenu_dispositivi == "2":
+                        if hosts:
+                            export_to_excel(hosts)
+                            print("Esportazione completata con successo.")
+                        else:
+                            print("Esegui prima una scansione della rete.")
+                        input("Premi invio per continuare...")
+                    else:
+                        print("Opzione non valida. Riprova.") 
+                elif sottomenu == "3":
+                    os.system("clear")
+                    print("Sottomenu Configurazione:")
+                    print("1. Configurazione delle impostazioni")
+                    
+        
     elif scelta == 2:
         # Gestione e routine
         print("Hai selezionato l'opzione 2: Gestione e Routine")
