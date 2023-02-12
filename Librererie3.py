@@ -191,12 +191,36 @@ def loading_bar():
             time.sleep(0.02)
             pbar.update(1)
 
+import nmap
+import subprocess
+import socket
+
 def network_scan():
     print("Scansione in corso...")
+    host = socket.gethostbyname(socket.gethostname())
     nm = nmap.PortScanner()
-    nm.scan('127.0.0.1', '22-443')
-    hosts = [(x, nm[x]['status']['state']) for x in nm.all_hosts()]
+    nm.scan(host, arguments="-sP")
+    
+    arp_output = subprocess.run(["arp", "-a"], capture_output=True, text=True)
+    arp_lines = arp_output.stdout.strip().split("\n")[2:]
+    arp_hosts = []
+    for line in arp_lines:
+        fields = line.split()
+        arp_hosts.append(fields[1][1:-1])
+        
+    nmap_hosts = []
+    for x in nm.all_hosts():
+        if nm[x].state() == "up":
+            nmap_hosts.append((x, nm[x].hostnames(), nm[x].state()))
+    
+    hosts = []
+    for host in nmap_hosts:
+        if host[0] in arp_hosts:
+            hosts.append(host)
+            arp_hosts.remove(host[0])
+            
     return hosts
+
 # Chiamiamo la funzione per stampare l'intestazione del menu con arte ASCII
 text_art_menu()
 # Chiamiamo la funzione per stampare la barra di caricamento
